@@ -1,0 +1,48 @@
+use borsh::{BorshDeserialize, BorshSerialize};
+use solana_program::{
+    account_info::{AccountInfo, next_account_info},
+    entrypoint,
+    entrypoint::ProgramResult,
+    msg,
+    program_error::ProgramError,
+    pubkey::Pubkey,
+};
+
+/// Define the type of state stored in accounts
+#[derive(BorshSerialize, BorshDeserialize)]
+pub struct Counter {
+    count: u32,
+}
+#[derive(BorshSerialize, BorshDeserialize)]
+enum Instruction_type {
+    Increment(u32),
+    Decrement(u32),
+}
+
+entrypoint!(counter_contract);
+
+pub fn counter_contract(
+    program_id: &Pubkey,
+    accounts: &[AccountInfo],
+    instruction_data: &[u8],
+) -> ProgramResult {
+    let acc = next_account_info(&mut accounts.iter())?;
+
+    let instruction_type = Instruction_type::try_from_slice(&instruction_data)?;
+
+    let mut counter_data = Counter::try_from_slice(&acc.data.borrow())?;
+
+    match instruction_type {
+        Instruction_type::Increment(value) => {
+            counter_data.count += value;
+        }
+        Instruction_type::Decrement(value) => {
+            counter_data.count -= value;
+        }
+    }
+
+    counter_data.serialize(&mut *acc.data.borrow_mut())?;
+
+    msg!("contract suceed");
+    Ok(())
+}
